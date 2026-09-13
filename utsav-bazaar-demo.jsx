@@ -1,0 +1,1468 @@
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  ShoppingCart, Search, User, Menu, X, Plus, Minus, Trash2, Package,
+  AlertTriangle, CheckCircle2, ChevronRight, ChevronLeft, PartyPopper, Gift,
+  Flame, Sparkles, Award, Palette, LayoutDashboard, ClipboardList,
+  Boxes, LogIn, LogOut, MapPin, CreditCard, Loader2, ArrowLeft, PackageX,
+  TrendingDown, Pencil, Save, ShieldCheck, Truck, MessageCircle, IndianRupee,
+  Percent, Users
+} from "lucide-react";
+
+/* ---------------------------------------------------------------------- */
+/* Data                                                                    */
+/* ---------------------------------------------------------------------- */
+
+const CATEGORY_META = {
+  "Balloons": { icon: PartyPopper, tint: "#E6007E" },
+  "Toffees & Candy": { icon: Gift, tint: "#FF6B35" },
+  "Candles": { icon: Flame, tint: "#F5A623" },
+  "Laddoos & Mithai": { icon: Sparkles, tint: "#E8871E" },
+  "Birthday Essentials": { icon: Award, tint: "#3B5BDB" },
+  "Party Decor": { icon: Palette, tint: "#8E44AD" },
+};
+const CATEGORIES = Object.keys(CATEGORY_META);
+
+const DEFAULT_PRODUCTS = [
+  { id: "p01", name: "Metallic Latex Balloons", category: "Balloons", price: 249, wholesalePrice: 189, moq: 20, stock: 42, unit: "Pack of 100", sku: "BL-001-ML", description: "High-shine metallic balloons in a mixed festive colour set. Our best-selling pack for birthdays, shop openings and mandap decor." },
+  { id: "p02", name: "Foil Number Balloon (34-inch)", category: "Balloons", price: 129, wholesalePrice: 89, moq: 50, stock: 4, unit: "Per piece", sku: "BL-002-FN", description: "Self-sealing foil number balloon, sold as single digits so you can order the exact date or age you need." },
+  { id: "p03", name: "Balloon Arch Decoration Kit", category: "Balloons", price: 899, wholesalePrice: 649, moq: 10, stock: 0, unit: "Kit of 200 pcs + strip", sku: "BL-003-AK", description: "Everything needed for a 10-foot balloon arch: balloons, glue dots, tying tool and connector strip." },
+  { id: "p04", name: "Assorted Toffee Jar", category: "Toffees & Candy", price: 320, wholesalePrice: 260, moq: 25, stock: 18, unit: "1 kg jar", sku: "TF-001-AJ", description: "A mixed jar of mango, orange and mint toffees, the kind that disappears fastest at the return-gift counter." },
+  { id: "p05", name: "Chocolate Eclairs Box", category: "Toffees & Candy", price: 180, wholesalePrice: 140, moq: 30, stock: 6, unit: "500 g box", sku: "TF-002-CE", description: "Classic chocolate eclairs, individually wrapped, sold in bulk boxes for shops and event caterers." },
+  { id: "p06", name: "Return Gift Candy Pouches", category: "Toffees & Candy", price: 450, wholesalePrice: 350, moq: 20, stock: 0, unit: "Pack of 50 pouches", sku: "TF-003-RG", description: "Pre-portioned candy pouches ready to hand out, so nobody's standing at the door counting toffees one by one." },
+  { id: "p07", name: "Number Birthday Candles", category: "Candles", price: 60, wholesalePrice: 40, moq: 100, stock: 220, unit: "Set of 1", sku: "CN-001-NB", description: "Glitter-finish number candles for the cake. Sold per set, stock up on the numbers that move fastest." },
+  { id: "p08", name: "Scented Jar Candles", category: "Candles", price: 399, wholesalePrice: 299, moq: 15, stock: 3, unit: "Pack of 6", sku: "CN-002-SJ", description: "Vanilla and rose scented jar candles for gifting sets and festive hampers." },
+  { id: "p09", name: "Sparkler Birthday Candles", category: "Candles", price: 149, wholesalePrice: 99, moq: 40, stock: 55, unit: "Pack of 10", sku: "CN-003-SP", description: "Fountain-style sparkler candles that turn any cake entrance into an occasion." },
+  { id: "p10", name: "Besan Laddoo", category: "Laddoos & Mithai", price: 480, wholesalePrice: 380, moq: 20, stock: 9, unit: "1 kg box", sku: "MT-001-BL", description: "Traditional besan laddoo made fresh in small batches, packed for same-week delivery to keep it that way." },
+  { id: "p11", name: "Motichoor Laddoo", category: "Laddoos & Mithai", price: 260, wholesalePrice: 210, moq: 25, stock: 0, unit: "500 g box", sku: "MT-002-MC", description: "Fine-grain motichoor laddoo, a staple order for birthday and housewarming return gifts across our retailer network." },
+  { id: "p12", name: "Assorted Mithai Gift Box", category: "Laddoos & Mithai", price: 199, wholesalePrice: 150, moq: 30, stock: 2, unit: "250 g box", sku: "MT-003-AM", description: "A compact mithai box with three varieties, sized for handing out rather than serving at the table." },
+  { id: "p13", name: "Happy Birthday Banner", category: "Birthday Essentials", price: 149, wholesalePrice: 99, moq: 30, stock: 27, unit: "Reusable banner", sku: "BD-001-HB", description: "A reusable glitter-letter banner that survives more than one birthday, which retailers say matters more than customers expect." },
+  { id: "p14", name: "Birthday Cap & Whistle Combo", category: "Birthday Essentials", price: 199, wholesalePrice: 140, moq: 25, stock: 5, unit: "Pack of 10", sku: "BD-002-CW", description: "Party caps and whistles bundled together so you're not selling them as two separate SKUs." },
+  { id: "p15", name: "Photo Booth Props Set", category: "Birthday Essentials", price: 249, wholesalePrice: 180, moq: 20, stock: 0, unit: "Set of 20", sku: "BD-003-PB", description: "Moustaches, glasses and speech-bubble props on sticks, the set every birthday photo corner needs." },
+  { id: "p16", name: "Paper Fan Decoration Set", category: "Party Decor", price: 299, wholesalePrice: 220, moq: 20, stock: 14, unit: "Set of 12 fans", sku: "PD-001-PF", description: "Layered paper fans in festive colourways, made to hang flat against a wall or backdrop in minutes." },
+  { id: "p17", name: "LED Fairy Lights (10 m)", category: "Party Decor", price: 349, wholesalePrice: 260, moq: 25, stock: 1, unit: "Per roll", sku: "PD-002-FL", description: "Warm-white fairy lights on a copper wire, battery or USB powered, sold by the roll for backdrop and mandap work." },
+  { id: "p18", name: "Confetti & Streamer Combo", category: "Party Decor", price: 179, wholesalePrice: 130, moq: 30, stock: 33, unit: "Combo pack", sku: "PD-003-CS", description: "Metallic streamers and a confetti popper bundled for the moment the cake comes out." },
+];
+
+const LOW_STOCK_THRESHOLD = 5;
+const rupees = (n) => `\u20b9${Math.round(n).toLocaleString("en-IN")}`;
+const stockState = (s) => (s === 0 ? "out" : s <= LOW_STOCK_THRESHOLD ? "low" : "in");
+const uid = (p) => `${p}${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-4)}`;
+const WHATSAPP_NUMBER = "919876543210";
+
+/* ---------------------------------------------------------------------- */
+/* Storage helpers                                                         */
+/* ---------------------------------------------------------------------- */
+
+async function loadShared(key, fallback) {
+  try {
+    const res = await window.storage.get(key, true);
+    if (res && res.value) return JSON.parse(res.value);
+  } catch (e) { /* not found yet */ }
+  return fallback;
+}
+async function saveShared(key, value) {
+  try { await window.storage.set(key, JSON.stringify(value), true); } catch (e) { console.error("storage save failed", e); }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Small building blocks                                                   */
+/* ---------------------------------------------------------------------- */
+
+function StockBadge({ stock }) {
+  const s = stockState(stock);
+  if (s === "out") return <span className="badge badge-out"><PackageX size={12} /> Out of stock</span>;
+  if (s === "low") return <span className="badge badge-low"><TrendingDown size={12} /> Low stock &middot; {stock} left</span>;
+  return <span className="badge badge-in"><CheckCircle2 size={12} /> In stock</span>;
+}
+
+function CategoryIcon({ name, size = 18 }) {
+  const meta = CATEGORY_META[name];
+  const Icon = meta ? meta.icon : Package;
+  return <Icon size={size} />;
+}
+
+function priceFor(product, mode) {
+  return mode === "wholesale" ? product.wholesalePrice : product.price;
+}
+
+function PriceTag({ product, mode }) {
+  if (mode === "wholesale") {
+    return (
+      <div className="price-tag wholesale">
+        <span className="price-main">{rupees(product.wholesalePrice)}<em>/unit</em></span>
+        <span className="moq-note">MOQ {product.moq} &middot; {product.unit}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="price-tag">
+      <span className="price-main">{rupees(product.price)}</span>
+      <span className="moq-note">{product.unit}</span>
+    </div>
+  );
+}
+
+function ProductTile({ product, mode, onOpen }) {
+  const meta = CATEGORY_META[product.category];
+  const out = product.stock === 0;
+  return (
+    <button className="product-tile" onClick={() => onOpen(product.id)}>
+      <div className="tile-image" style={{ background: `linear-gradient(150deg, ${meta.tint}, ${meta.tint}CC)` }}>
+        <CategoryIcon name={product.category} size={34} />
+        {out && <div className="tile-out-strip">SOLD OUT</div>}
+      </div>
+      <div className="tile-body">
+        <div className="tile-cat">{product.category}</div>
+        <div className="tile-name">{product.name}</div>
+        <div className="tile-row">
+          <PriceTag product={product} mode={mode} />
+          <StockBadge stock={product.stock} />
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* App                                                                      */
+/* ---------------------------------------------------------------------- */
+
+export default function App() {
+  const [booted, setBooted] = useState(false);
+  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const [orders, setOrders] = useState([]);
+  const [page, setPage] = useState("home");
+  const [navOpen, setNavOpen] = useState(false);
+  const [priceMode, setPriceMode] = useState("retail"); // 'retail' | 'wholesale'
+
+  const [cart, setCart] = useState([]); // {productId, qty, mode, price}
+  const [user, setUser] = useState(null); // {name, email, role}
+  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchDraft, setSearchDraft] = useState("");
+  const [adminTab, setAdminTab] = useState("overview");
+  const [lastOrderId, setLastOrderId] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  /* ----- boot: load shared catalog + orders ----- */
+  useEffect(() => {
+    (async () => {
+      const p = await loadShared("utsav:products", null);
+      const o = await loadShared("utsav:orders", null);
+      if (p) setProducts(p); else await saveShared("utsav:products", DEFAULT_PRODUCTS);
+      if (o) setOrders(o); else await saveShared("utsav:orders", []);
+      setBooted(true);
+    })();
+  }, []);
+
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2600);
+  }, []);
+
+  const persistProducts = useCallback((next) => {
+    setProducts(next);
+    saveShared("utsav:products", next);
+  }, []);
+  const persistOrders = useCallback((next) => {
+    setOrders(next);
+    saveShared("utsav:orders", next);
+  }, []);
+
+  const goto = (p, opts = {}) => {
+    setPage(p);
+    setNavOpen(false);
+    if (opts.category !== undefined) setSelectedCategory(opts.category);
+    if (opts.product !== undefined) setSelectedProductId(opts.product);
+    if (opts.clearSearch) setSearchQuery("");
+    if (opts.mode) setPriceMode(opts.mode);
+    window.scrollTo?.(0, 0);
+  };
+
+  /* ----- cart logic ----- */
+  const cartLines = useMemo(() => cart.map((c) => {
+    const product = products.find((p) => p.id === c.productId);
+    return product ? { ...c, product } : null;
+  }).filter(Boolean), [cart, products]);
+
+  const cartCount = cartLines.reduce((sum, l) => sum + l.qty, 0);
+  const cartSubtotal = cartLines.reduce((sum, l) => sum + l.qty * l.price, 0);
+  const shipping = cartSubtotal > 0 && cartSubtotal < 1500 ? 99 : 0;
+  const cartTotal = cartSubtotal + shipping;
+
+  const addToCart = (productId, qty, mode) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product || product.stock === 0) return;
+    const unitPrice = priceFor(product, mode);
+    setCart((prev) => {
+      const existing = prev.find((c) => c.productId === productId);
+      const currentQty = existing ? existing.qty : 0;
+      const nextQty = Math.min(currentQty + qty, product.stock);
+      if (existing) return prev.map((c) => c.productId === productId ? { ...c, qty: nextQty, mode, price: unitPrice } : c);
+      return [...prev, { productId, qty: nextQty, mode, price: unitPrice }];
+    });
+    showToast(`Added ${product.name} to cart (${mode === "wholesale" ? "wholesale" : "retail"})`);
+  };
+  const setCartQty = (productId, qty) => {
+    const product = products.find((p) => p.id === productId);
+    const clamped = Math.max(1, Math.min(qty, product ? product.stock : qty));
+    setCart((prev) => prev.map((c) => c.productId === productId ? { ...c, qty: clamped } : c));
+  };
+  const removeFromCart = (productId) => setCart((prev) => prev.filter((c) => c.productId !== productId));
+
+  /* ----- search + catalog filtering ----- */
+  const catalogResults = useMemo(() => {
+    let list = products;
+    if (selectedCategory) list = list.filter((p) => p.category === selectedCategory);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
+    }
+    return list;
+  }, [products, selectedCategory, searchQuery]);
+
+  const runSearch = (q) => {
+    setSearchQuery(q);
+    setSelectedCategory(null);
+    goto("catalog");
+  };
+
+  const selectedProduct = products.find((p) => p.id === selectedProductId) || null;
+  const lastOrder = orders.find((o) => o.id === lastOrderId) || null;
+  const myOrders = user ? orders.filter((o) => o.customerEmail === user.email) : [];
+
+  const lowStockList = products.filter((p) => stockState(p.stock) === "low");
+  const outOfStockList = products.filter((p) => stockState(p.stock) === "out");
+
+  /* ----- order placement (mock payment gateway) ----- */
+  const [paying, setPaying] = useState(false);
+  const placeOrder = (shippingInfo) => {
+    setPaying(true);
+    setTimeout(() => {
+      const orderId = uid("UB-").toUpperCase();
+      const items = cartLines.map((l) => ({ productId: l.product.id, name: l.product.name, price: l.price, qty: l.qty, mode: l.mode }));
+      const order = {
+        id: orderId,
+        customerName: shippingInfo.name,
+        customerEmail: shippingInfo.email,
+        address: `${shippingInfo.address}, ${shippingInfo.city} ${shippingInfo.pincode}`,
+        gstin: shippingInfo.gstin || "",
+        items,
+        subtotal: cartSubtotal,
+        shipping,
+        total: cartTotal,
+        status: "Processing",
+        paymentStatus: "Paid",
+        gateway: "UtsavPay",
+        date: new Date().toISOString(),
+      };
+      const nextProducts = products.map((p) => {
+        const line = items.find((i) => i.productId === p.id);
+        return line ? { ...p, stock: Math.max(0, p.stock - line.qty) } : p;
+      });
+      persistProducts(nextProducts);
+      persistOrders([order, ...orders]);
+      setCart([]);
+      setPaying(false);
+      setLastOrderId(orderId);
+      goto("confirmation");
+    }, 1300);
+  };
+
+  /* ----- admin actions ----- */
+  const updateOrderStatus = (orderId, status) => {
+    persistOrders(orders.map((o) => o.id === orderId ? { ...o, status } : o));
+  };
+  const saveProduct = (product) => {
+    const exists = products.some((p) => p.id === product.id);
+    const next = exists ? products.map((p) => p.id === product.id ? product : p) : [product, ...products];
+    persistProducts(next);
+  };
+  const deleteProduct = (id) => persistProducts(products.filter((p) => p.id !== id));
+  const restock = (id, amount) => persistProducts(products.map((p) => p.id === id ? { ...p, stock: p.stock + amount } : p));
+
+  const isAdmin = user?.role === "admin";
+
+  if (!booted) {
+    return (
+      <div className="boot-screen">
+        <style>{GLOBAL_CSS}</style>
+        <Loader2 className="spin" size={26} />
+        <span>Loading Utsav Bazaar&hellip;</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-root">
+      <style>{GLOBAL_CSS}</style>
+
+      <TopNav
+        cartCount={cartCount}
+        user={user}
+        navOpen={navOpen}
+        setNavOpen={setNavOpen}
+        searchDraft={searchDraft}
+        setSearchDraft={setSearchDraft}
+        onSearch={runSearch}
+        goto={goto}
+        isAdmin={isAdmin}
+        onLogout={() => { setUser(null); goto("home"); }}
+        priceMode={priceMode}
+        setPriceMode={setPriceMode}
+      />
+
+      <main className="page-body">
+        {page === "home" && (
+          <HomePage goto={goto} products={products} priceMode={priceMode} setPriceMode={setPriceMode} />
+        )}
+        {page === "catalog" && (
+          <CatalogPage
+            results={catalogResults}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            priceMode={priceMode}
+            onOpen={(id) => goto("product", { product: id })}
+          />
+        )}
+        {page === "product" && selectedProduct && (
+          <ProductPage
+            product={selectedProduct}
+            priceMode={priceMode}
+            setPriceMode={setPriceMode}
+            onAdd={addToCart}
+            onBack={() => goto("catalog")}
+          />
+        )}
+        {page === "cart" && (
+          <CartPage
+            lines={cartLines}
+            subtotal={cartSubtotal}
+            shipping={shipping}
+            total={cartTotal}
+            setQty={setCartQty}
+            removeItem={removeFromCart}
+            goto={goto}
+          />
+        )}
+        {page === "checkout" && (
+          <CheckoutPage
+            user={user}
+            lines={cartLines}
+            subtotal={cartSubtotal}
+            shipping={shipping}
+            total={cartTotal}
+            paying={paying}
+            onPlaceOrder={placeOrder}
+            goto={goto}
+          />
+        )}
+        {page === "confirmation" && (
+          <ConfirmationPage order={lastOrder} goto={goto} />
+        )}
+        {page === "orders" && (
+          <OrdersPage user={user} orders={myOrders} goto={goto} />
+        )}
+        {page === "login" && (
+          <LoginPage
+            onLogin={(u) => { setUser(u); showToast(`Signed in as ${u.name}`); goto(u.role === "admin" ? "admin" : "home"); }}
+          />
+        )}
+        {page === "admin" && isAdmin && (
+          <AdminPage
+            tab={adminTab}
+            setTab={setAdminTab}
+            products={products}
+            orders={orders}
+            lowStockList={lowStockList}
+            outOfStockList={outOfStockList}
+            onUpdateStatus={updateOrderStatus}
+            onSaveProduct={saveProduct}
+            onDeleteProduct={deleteProduct}
+            onRestock={restock}
+          />
+        )}
+        {page === "admin" && !isAdmin && (
+          <div className="empty-state">
+            <ShieldCheck size={28} />
+            <p>You need an admin session to view the dashboard.</p>
+            <button className="btn btn-primary" onClick={() => goto("login")}>Go to sign in</button>
+          </div>
+        )}
+      </main>
+
+      <Footer goto={goto} />
+
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Top navigation                                                          */
+/* ---------------------------------------------------------------------- */
+
+function TopNav({ cartCount, user, navOpen, setNavOpen, searchDraft, setSearchDraft, onSearch, goto, isAdmin, onLogout, priceMode, setPriceMode }) {
+  return (
+    <header className="topnav">
+      <div className="topbar">
+        <span><Truck size={12} /> Pan-India delivery</span>
+        <span><ShieldCheck size={12} /> GST invoice on every order</span>
+        <span className="topbar-hide-sm"><MessageCircle size={12} /> WhatsApp: +91 98765 43210</span>
+      </div>
+      <div className="topnav-inner">
+        <button className="brand" onClick={() => goto("home")}>
+          <PartyPopper size={22} />
+          <span>UTSAV<em>WHOLESALE BAZAAR</em></span>
+        </button>
+
+        <nav className="nav-links">
+          <button onClick={() => goto("catalog", { category: null, clearSearch: true })}>Catalog</button>
+          <button onClick={() => goto("orders")}>Orders</button>
+          {isAdmin && <button onClick={() => goto("admin")}>Admin</button>}
+        </nav>
+
+        <div className="mode-toggle" role="group" aria-label="Pricing mode">
+          <button className={priceMode === "retail" ? "active" : ""} onClick={() => setPriceMode("retail")}>Retail</button>
+          <button className={priceMode === "wholesale" ? "active" : ""} onClick={() => setPriceMode("wholesale")}>Wholesale</button>
+        </div>
+
+        <form className="nav-search" onSubmit={(e) => { e.preventDefault(); onSearch(searchDraft); }}>
+          <Search size={16} />
+          <input
+            placeholder="Search balloons, mithai, candles&hellip;"
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
+          />
+        </form>
+
+        <div className="nav-actions">
+          <button className="icon-btn" onClick={() => goto("cart")} aria-label="Cart">
+            <ShoppingCart size={20} />
+            {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
+          </button>
+          {user ? (
+            <button className="icon-btn account-btn" onClick={onLogout} title="Sign out">
+              <User size={18} /><span>{user.name.split(" ")[0]}</span><LogOut size={14} />
+            </button>
+          ) : (
+            <button className="icon-btn account-btn" onClick={() => goto("login")}>
+              <LogIn size={18} /><span>Sign in</span>
+            </button>
+          )}
+          <button className="icon-btn mobile-toggle" onClick={() => setNavOpen(!navOpen)}>
+            {navOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+      </div>
+
+      {navOpen && (
+        <div className="mobile-menu">
+          <div className="mode-toggle full">
+            <button className={priceMode === "retail" ? "active" : ""} onClick={() => setPriceMode("retail")}>Retail</button>
+            <button className={priceMode === "wholesale" ? "active" : ""} onClick={() => setPriceMode("wholesale")}>Wholesale</button>
+          </div>
+          <form onSubmit={(e) => { e.preventDefault(); onSearch(searchDraft); }} className="nav-search mobile">
+            <Search size={16} />
+            <input placeholder="Search gear&hellip;" value={searchDraft} onChange={(e) => setSearchDraft(e.target.value)} />
+          </form>
+          <button onClick={() => goto("catalog", { category: null, clearSearch: true })}>Catalog</button>
+          <button onClick={() => goto("orders")}>Orders</button>
+          <button onClick={() => goto("cart")}>Cart ({cartCount})</button>
+          {isAdmin && <button onClick={() => goto("admin")}>Admin</button>}
+          {user ? <button onClick={onLogout}>Sign out</button> : <button onClick={() => goto("login")}>Sign in</button>}
+        </div>
+      )}
+    </header>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Home                                                                     */
+/* ---------------------------------------------------------------------- */
+
+function HomePage({ goto, products, priceMode, setPriceMode }) {
+  const featured = products.filter((p) => p.stock > 0).slice(0, 4);
+  return (
+    <div className="home">
+      <section className="hero">
+        <div className="hero-copy">
+          <div className="hero-tag">INDIA'S PARTY SUPPLY BAZAAR</div>
+          <h1>Every celebration,<br />sorted in one order.</h1>
+          <p>Balloons, candles, toffees, mithai and party decor &mdash; stocked for the single birthday order and the 500-piece shop order alike. Switch to wholesale pricing any time.</p>
+          <div className="hero-ctas">
+            <button className="btn btn-primary" onClick={() => goto("catalog", { category: null, clearSearch: true, mode: "retail" })}>Shop retail <ChevronRight size={16} /></button>
+            <button className="btn btn-gold" onClick={() => goto("catalog", { category: null, clearSearch: true, mode: "wholesale" })}><Percent size={16} /> Get wholesale pricing</button>
+          </div>
+        </div>
+        <div className="hero-visual">
+          <div className="floaty f1"><PartyPopper size={26} /></div>
+          <div className="floaty f2"><Flame size={22} /></div>
+          <div className="floaty f3"><Sparkles size={20} /></div>
+          <div className="hero-card">
+            <div className="hero-card-row"><span>SKUs in catalog</span><strong>{products.length}+</strong></div>
+            <div className="hero-card-row"><span>Wholesale MOQ from</span><strong>10 units</strong></div>
+            <div className="hero-card-row"><span>Retailers served</span><strong>5,000+</strong></div>
+            <div className="hero-card-row"><span>Payment gateway</span><strong>UtsavPay</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="trust-strip">
+        <div><Truck size={18} /> Pan-India delivery</div>
+        <div><IndianRupee size={18} /> Bulk pricing, no hidden fees</div>
+        <div><ShieldCheck size={18} /> GST invoice included</div>
+        <div><MessageCircle size={18} /> WhatsApp order support</div>
+      </section>
+
+      <section className="cat-rail">
+        <h2>Shop by category</h2>
+        <div className="cat-grid">
+          {CATEGORIES.map((cat) => {
+            const meta = CATEGORY_META[cat];
+            const Icon = meta.icon;
+            return (
+              <button key={cat} className="cat-card" onClick={() => goto("catalog", { category: cat, clearSearch: true })} style={{ "--tint": meta.tint }}>
+                <span className="cat-card-icon" style={{ background: meta.tint }}><Icon size={22} /></span>
+                <span>{cat}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="wholesale-banner">
+        <div>
+          <h2>Run a shop or plan events for a living?</h2>
+          <p>Unlock per-unit wholesale rates and MOQ pricing across the whole catalog &mdash; no separate account needed.</p>
+        </div>
+        <button className="btn btn-gold" onClick={() => { setPriceMode("wholesale"); goto("catalog", { category: null, clearSearch: true }); }}>
+          <Percent size={16} /> View wholesale prices
+        </button>
+      </section>
+
+      <section className="featured">
+        <div className="section-head">
+          <h2>Popular this week</h2>
+          <button className="link-btn" onClick={() => goto("catalog", { category: null, clearSearch: true })}>View all <ChevronRight size={14} /></button>
+        </div>
+        <div className="product-grid">
+          {featured.map((p) => (
+            <ProductTile key={p.id} product={p} mode={priceMode} onOpen={(id) => goto("product", { product: id })} />
+          ))}
+        </div>
+      </section>
+
+      <section className="testimonials">
+        <h2>Trusted by shopkeepers across India</h2>
+        <div className="testi-grid">
+          <div className="testi-card">
+            <p>&ldquo;I order balloons and candles for my gift shop every month &mdash; the wholesale rates make a real difference.&rdquo;</p>
+            <strong>Ramesh &middot; Gift Shop, Surat</strong>
+          </div>
+          <div className="testi-card">
+            <p>&ldquo;Mithai boxes arrive fresh even on bulk festival orders. That's the whole reason we keep coming back.&rdquo;</p>
+            <strong>Priya &middot; Event Caterer, Pune</strong>
+          </div>
+          <div className="testi-card">
+            <p>&ldquo;One invoice, one delivery, everything from decor to return gifts. Saves us three separate vendor calls.&rdquo;</p>
+            <strong>Farhan &middot; Party Planner, Lucknow</strong>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Catalog                                                                  */
+/* ---------------------------------------------------------------------- */
+
+function CatalogPage({ results, selectedCategory, setSelectedCategory, searchQuery, setSearchQuery, priceMode, onOpen }) {
+  return (
+    <div className="catalog">
+      <aside className="catalog-filters">
+        <h3>Category</h3>
+        <button className={`filter-item ${!selectedCategory ? "active" : ""}`} onClick={() => setSelectedCategory(null)}>
+          <Boxes size={16} /> All items
+        </button>
+        {CATEGORIES.map((cat) => (
+          <button key={cat} className={`filter-item ${selectedCategory === cat ? "active" : ""}`} onClick={() => setSelectedCategory(cat)}>
+            <CategoryIcon name={cat} size={16} /> {cat}
+          </button>
+        ))}
+        {searchQuery && (
+          <div className="active-search">
+            Searching &ldquo;{searchQuery}&rdquo;
+            <button onClick={() => setSearchQuery("")}><X size={13} /></button>
+          </div>
+        )}
+      </aside>
+
+      <section className="catalog-results">
+        <div className="section-head">
+          <h2>{selectedCategory || "All items"}</h2>
+          <span className="result-count">{results.length} item{results.length !== 1 ? "s" : ""}</span>
+        </div>
+        {results.length === 0 ? (
+          <div className="empty-state">
+            <Search size={24} />
+            <p>Nothing matches that filter. Try another category or clear the search.</p>
+          </div>
+        ) : (
+          <div className="product-grid">
+            {results.map((p) => <ProductTile key={p.id} product={p} mode={priceMode} onOpen={onOpen} />)}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Product detail                                                          */
+/* ---------------------------------------------------------------------- */
+
+function ProductPage({ product, priceMode, setPriceMode, onAdd, onBack }) {
+  const [qty, setQty] = useState(priceMode === "wholesale" ? product.moq : 1);
+  const meta = CATEGORY_META[product.category];
+  const s = stockState(product.stock);
+  const wholesaleBlocked = priceMode === "wholesale" && product.stock < product.moq && product.stock > 0;
+
+  useEffect(() => {
+    setQty(priceMode === "wholesale" ? Math.min(product.moq, product.stock || product.moq) : 1);
+  }, [product.id, priceMode]);
+
+  const min = priceMode === "wholesale" ? product.moq : 1;
+  const unitPrice = priceFor(product, priceMode);
+  const waMessage = encodeURIComponent(`Hi, I'd like a bulk quote for ${product.name} (SKU ${product.sku}).`);
+
+  return (
+    <div className="product-page">
+      <button className="link-btn back-link" onClick={onBack}><ArrowLeft size={15} /> Back to catalog</button>
+      <div className="product-layout">
+        <div className="product-image" style={{ background: `linear-gradient(150deg, ${meta.tint}, ${meta.tint}CC)` }}>
+          <CategoryIcon name={product.category} size={64} />
+        </div>
+        <div className="product-info">
+          <div className="tile-cat">{product.category}</div>
+          <h1>{product.name}</h1>
+
+          <div className="mode-toggle small" role="group">
+            <button className={priceMode === "retail" ? "active" : ""} onClick={() => setPriceMode("retail")}>Retail</button>
+            <button className={priceMode === "wholesale" ? "active" : ""} onClick={() => setPriceMode("wholesale")}>Wholesale</button>
+          </div>
+
+          <div className="product-price-row">
+            <span className="product-price">{rupees(unitPrice)}<em> / {product.unit.toLowerCase().includes("pack") || product.unit.toLowerCase().includes("box") || product.unit.toLowerCase().includes("kit") || product.unit.toLowerCase().includes("set") ? "unit" : "piece"}</em></span>
+            <StockBadge stock={product.stock} />
+          </div>
+          {priceMode === "wholesale" && <div className="moq-banner"><Percent size={13} /> Minimum order quantity: {product.moq} units</div>}
+
+          <p className="product-desc">{product.description}</p>
+
+          <div className="spec-table">
+            <div className="spec-row"><span>SKU</span><strong>{product.sku}</strong></div>
+            <div className="spec-row"><span>Sold as</span><strong>{product.unit}</strong></div>
+            <div className="spec-row"><span>Wholesale rate</span><strong>{rupees(product.wholesalePrice)} (MOQ {product.moq})</strong></div>
+          </div>
+
+          {s !== "out" && !wholesaleBlocked ? (
+            <div className="add-row">
+              <div className="qty-stepper">
+                <button onClick={() => setQty((q) => Math.max(min, q - (priceMode === "wholesale" ? 5 : 1)))}><Minus size={14} /></button>
+                <span>{qty}</span>
+                <button onClick={() => setQty((q) => Math.min(product.stock, q + (priceMode === "wholesale" ? 5 : 1)))}><Plus size={14} /></button>
+              </div>
+              <button className="btn btn-primary" onClick={() => onAdd(product.id, qty, priceMode)}>
+                <ShoppingCart size={16} /> Add to cart
+              </button>
+            </div>
+          ) : s === "out" ? (
+            <div className="out-notice"><PackageX size={16} /> This item is currently out of stock.</div>
+          ) : (
+            <div className="out-notice"><AlertTriangle size={16} /> Only {product.stock} left &mdash; below the {product.moq}-unit wholesale MOQ. Switch to retail or enquire for a custom quote.</div>
+          )}
+
+          <a className="whatsapp-link" href={`https://wa.me/${WHATSAPP_NUMBER}?text=${waMessage}`} target="_blank" rel="noopener noreferrer">
+            <MessageCircle size={16} /> Enquire in bulk on WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Cart                                                                     */
+/* ---------------------------------------------------------------------- */
+
+function CartPage({ lines, subtotal, shipping, total, setQty, removeItem, goto }) {
+  if (lines.length === 0) {
+    return (
+      <div className="empty-state">
+        <ShoppingCart size={26} />
+        <p>Your cart is empty.</p>
+        <button className="btn btn-primary" onClick={() => goto("catalog", { category: null, clearSearch: true })}>Browse the catalog</button>
+      </div>
+    );
+  }
+  return (
+    <div className="cart-page">
+      <h1>Your cart</h1>
+      <div className="cart-layout">
+        <div className="cart-lines">
+          {lines.map((l) => (
+            <div className="cart-line" key={l.productId}>
+              <div className="cart-line-image" style={{ background: `linear-gradient(150deg, ${CATEGORY_META[l.product.category].tint}, ${CATEGORY_META[l.product.category].tint}CC)` }}>
+                <CategoryIcon name={l.product.category} size={22} />
+              </div>
+              <div className="cart-line-info">
+                <div className="tile-name">{l.product.name}</div>
+                <div className="tile-cat">{l.product.category} &middot; <span className={`mode-flag ${l.mode}`}>{l.mode === "wholesale" ? "Wholesale" : "Retail"}</span></div>
+                <StockBadge stock={l.product.stock} />
+              </div>
+              <div className="qty-stepper small">
+                <button onClick={() => setQty(l.productId, l.qty - 1)}><Minus size={12} /></button>
+                <span>{l.qty}</span>
+                <button onClick={() => setQty(l.productId, l.qty + 1)} disabled={l.qty >= l.product.stock}><Plus size={12} /></button>
+              </div>
+              <div className="cart-line-price">{rupees(l.price * l.qty)}</div>
+              <button className="icon-btn danger" onClick={() => removeItem(l.productId)}><Trash2 size={16} /></button>
+            </div>
+          ))}
+        </div>
+        <div className="cart-summary">
+          <div className="spec-row"><span>Subtotal</span><strong>{rupees(subtotal)}</strong></div>
+          <div className="spec-row"><span>Delivery</span><strong>{shipping === 0 ? "Free" : rupees(shipping)}</strong></div>
+          <div className="spec-row total"><span>Total</span><strong>{rupees(total)}</strong></div>
+          <button className="btn btn-primary full" onClick={() => goto("checkout")}>Proceed to checkout <ChevronRight size={16} /></button>
+          <button className="link-btn" onClick={() => goto("catalog", { category: null, clearSearch: true })}>Keep browsing</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Checkout                                                                 */
+/* ---------------------------------------------------------------------- */
+
+function CheckoutPage({ user, lines, subtotal, shipping, total, paying, onPlaceOrder, goto }) {
+  const [form, setForm] = useState({
+    name: user?.name || "", email: user?.email || "", phone: "", address: "", city: "", pincode: "", gstin: "",
+    cardNumber: "", expiry: "", cvv: "",
+  });
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const valid = form.name && form.email && form.phone && form.address && form.city && form.pincode && form.cardNumber.length >= 12 && form.expiry && form.cvv.length >= 3;
+
+  if (lines.length === 0 && !paying) {
+    return (
+      <div className="empty-state">
+        <ShoppingCart size={24} />
+        <p>Add something to your cart before checking out.</p>
+        <button className="btn btn-primary" onClick={() => goto("catalog", { category: null, clearSearch: true })}>Browse the catalog</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="checkout-page">
+      <h1>Checkout</h1>
+      <div className="cart-layout">
+        <div className="checkout-form">
+          <h3><MapPin size={16} /> Delivery details</h3>
+          <div className="form-grid">
+            <label>Full name<input value={form.name} onChange={set("name")} placeholder="Priya Sharma" /></label>
+            <label>Email<input type="email" value={form.email} onChange={set("email")} placeholder="priya@example.com" /></label>
+            <label>Phone<input value={form.phone} onChange={set("phone")} placeholder="98765 43210" /></label>
+            <label>GSTIN (optional)<input value={form.gstin} onChange={set("gstin")} placeholder="For business orders" /></label>
+            <label className="span-2">Street address<input value={form.address} onChange={set("address")} placeholder="14 MG Road, Shop No. 3" /></label>
+            <label>City<input value={form.city} onChange={set("city")} placeholder="Indore" /></label>
+            <label>PIN code<input value={form.pincode} onChange={set("pincode")} placeholder="452001" /></label>
+          </div>
+
+          <h3><CreditCard size={16} /> Payment &middot; UtsavPay</h3>
+          <div className="form-grid">
+            <label className="span-2">Card number<input value={form.cardNumber} onChange={set("cardNumber")} placeholder="4242 4242 4242 4242" maxLength={19} /></label>
+            <label>Expiry<input value={form.expiry} onChange={set("expiry")} placeholder="MM/YY" /></label>
+            <label>CVV<input value={form.cvv} onChange={set("cvv")} placeholder="123" maxLength={4} /></label>
+          </div>
+          <p className="mock-note">UtsavPay is a single simulated gateway (UPI, cards and net banking route through it) for demo purposes &mdash; no real payment is charged.</p>
+        </div>
+
+        <div className="cart-summary">
+          {lines.map((l) => (
+            <div className="spec-row" key={l.productId}><span>{l.product.name} &times;{l.qty}</span><strong>{rupees(l.price * l.qty)}</strong></div>
+          ))}
+          <div className="spec-row"><span>Delivery</span><strong>{shipping === 0 ? "Free" : rupees(shipping)}</strong></div>
+          <div className="spec-row total"><span>Total</span><strong>{rupees(total)}</strong></div>
+          <button className="btn btn-primary full" disabled={!valid || paying} onClick={() => onPlaceOrder(form)}>
+            {paying ? <><Loader2 size={16} className="spin" /> Processing payment&hellip;</> : <>Place order &middot; {rupees(total)}</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Confirmation                                                             */
+/* ---------------------------------------------------------------------- */
+
+function ConfirmationPage({ order, goto }) {
+  if (!order) {
+    return (
+      <div className="empty-state">
+        <Package size={24} />
+        <p>No recent order to show.</p>
+        <button className="btn btn-primary" onClick={() => goto("home")}>Back to home</button>
+      </div>
+    );
+  }
+  return (
+    <div className="confirmation">
+      <CheckCircle2 size={40} className="confirm-icon" />
+      <h1>Order confirmed</h1>
+      <p>Payment received via {order.gateway}. A GST invoice and confirmation would normally be emailed to <strong>{order.customerEmail}</strong>.</p>
+      <div className="confirm-card">
+        <div className="spec-row"><span>Order number</span><strong>{order.id}</strong></div>
+        <div className="spec-row"><span>Status</span><strong>{order.status}</strong></div>
+        <div className="spec-row"><span>Delivering to</span><strong>{order.address}</strong></div>
+        <div className="divider" />
+        {order.items.map((i) => (
+          <div className="spec-row" key={i.productId}><span>{i.name} &times;{i.qty}</span><strong>{rupees(i.price * i.qty)}</strong></div>
+        ))}
+        <div className="divider" />
+        <div className="spec-row total"><span>Total paid</span><strong>{rupees(order.total)}</strong></div>
+      </div>
+      <div className="hero-ctas">
+        <button className="btn btn-primary" onClick={() => goto("orders")}>View order history</button>
+        <button className="btn btn-outline" onClick={() => goto("catalog", { category: null, clearSearch: true })}>Continue shopping</button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Order history                                                            */
+/* ---------------------------------------------------------------------- */
+
+function OrdersPage({ user, orders, goto }) {
+  if (!user) {
+    return (
+      <div className="empty-state">
+        <ClipboardList size={24} />
+        <p>Sign in to see your order history.</p>
+        <button className="btn btn-primary" onClick={() => goto("login")}>Sign in</button>
+      </div>
+    );
+  }
+  if (orders.length === 0) {
+    return (
+      <div className="empty-state">
+        <ClipboardList size={24} />
+        <p>No orders yet under {user.email}.</p>
+        <button className="btn btn-primary" onClick={() => goto("catalog", { category: null, clearSearch: true })}>Browse the catalog</button>
+      </div>
+    );
+  }
+  return (
+    <div className="orders-page">
+      <h1>Order history</h1>
+      <div className="order-list">
+        {orders.map((o) => (
+          <div className="order-card" key={o.id}>
+            <div className="order-card-head">
+              <div>
+                <div className="tile-name">{o.id}</div>
+                <div className="tile-cat">{new Date(o.date).toLocaleDateString("en-IN")}</div>
+              </div>
+              <span className={`status-pill status-${o.status.toLowerCase()}`}>{o.status}</span>
+            </div>
+            <div className="divider" />
+            {o.items.map((i) => (
+              <div className="spec-row" key={i.productId}><span>{i.name} &times;{i.qty} <span className={`mode-flag ${i.mode}`}>{i.mode === "wholesale" ? "Wholesale" : "Retail"}</span></span><strong>{rupees(i.price * i.qty)}</strong></div>
+            ))}
+            <div className="spec-row total"><span>Total</span><strong>{rupees(o.total)}</strong></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Login                                                                    */
+/* ---------------------------------------------------------------------- */
+
+function LoginPage({ onLogin }) {
+  const [mode, setMode] = useState("customer");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [adminUser, setAdminUser] = useState("");
+  const [adminPass, setAdminPass] = useState("");
+  const [error, setError] = useState("");
+
+  const submitCustomer = (e) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) { setError("Enter a name and email to continue."); return; }
+    onLogin({ name: name.trim(), email: email.trim().toLowerCase(), role: "customer" });
+  };
+  const submitAdmin = (e) => {
+    e.preventDefault();
+    if (adminUser === "admin" && adminPass === "admin123") {
+      onLogin({ name: "Admin", email: "admin@utsavbazaar.demo", role: "admin" });
+    } else {
+      setError("Incorrect admin credentials.");
+    }
+  };
+
+  return (
+    <div className="login-page">
+      <div className="login-card">
+        <div className="mode-switch">
+          <button className={mode === "customer" ? "active" : ""} onClick={() => { setMode("customer"); setError(""); }}>Customer</button>
+          <button className={mode === "admin" ? "active" : ""} onClick={() => { setMode("admin"); setError(""); }}>Admin</button>
+        </div>
+
+        {mode === "customer" ? (
+          <form onSubmit={submitCustomer} className="form-grid one-col">
+            <h2>Sign in</h2>
+            <p className="mock-note">Basic auth for demo purposes &mdash; any name and email creates a session.</p>
+            <label>Full name<input value={name} onChange={(e) => setName(e.target.value)} placeholder="Priya Sharma" /></label>
+            <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="priya@example.com" /></label>
+            {error && <div className="form-error">{error}</div>}
+            <button className="btn btn-primary full" type="submit">Continue <ChevronRight size={16} /></button>
+          </form>
+        ) : (
+          <form onSubmit={submitAdmin} className="form-grid one-col">
+            <h2>Admin sign in</h2>
+            <p className="mock-note">Demo credentials &mdash; username <strong>admin</strong>, password <strong>admin123</strong>.</p>
+            <label>Username<input value={adminUser} onChange={(e) => setAdminUser(e.target.value)} placeholder="admin" /></label>
+            <label>Password<input type="password" value={adminPass} onChange={(e) => setAdminPass(e.target.value)} placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" /></label>
+            {error && <div className="form-error">{error}</div>}
+            <button className="btn btn-primary full" type="submit"><ShieldCheck size={16} /> Enter dashboard</button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Admin dashboard                                                          */
+/* ---------------------------------------------------------------------- */
+
+function AdminPage({ tab, setTab, products, orders, lowStockList, outOfStockList, onUpdateStatus, onSaveProduct, onDeleteProduct, onRestock }) {
+  const revenue = orders.reduce((s, o) => s + o.total, 0);
+  const tabs = [
+    { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "products", label: "Products", icon: Package },
+    { id: "orders", label: "Orders", icon: ClipboardList },
+    { id: "inventory", label: "Inventory", icon: Boxes },
+  ];
+
+  return (
+    <div className="admin-page">
+      <h1>Admin dashboard</h1>
+      <div className="admin-tabs">
+        {tabs.map((t) => {
+          const Icon = t.icon;
+          return (
+            <button key={t.id} className={tab === t.id ? "active" : ""} onClick={() => setTab(t.id)}>
+              <Icon size={15} /> {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "overview" && (
+        <div className="stat-grid">
+          <StatCard label="Total orders" value={orders.length} icon={ClipboardList} />
+          <StatCard label="Revenue" value={rupees(revenue)} icon={IndianRupee} />
+          <StatCard label="Low-stock SKUs" value={lowStockList.length} icon={TrendingDown} tone="warn" />
+          <StatCard label="Out-of-stock SKUs" value={outOfStockList.length} icon={PackageX} tone="danger" />
+        </div>
+      )}
+
+      {tab === "products" && (
+        <AdminProducts products={products} onSave={onSaveProduct} onDelete={onDeleteProduct} />
+      )}
+
+      {tab === "orders" && (
+        <AdminOrders orders={orders} onUpdateStatus={onUpdateStatus} />
+      )}
+
+      {tab === "inventory" && (
+        <AdminInventory products={products} lowStockList={lowStockList} outOfStockList={outOfStockList} onRestock={onRestock} />
+      )}
+    </div>
+  );
+}
+
+function StatCard({ label, value, icon: Icon, tone }) {
+  return (
+    <div className={`stat-card ${tone || ""}`}>
+      <Icon size={20} />
+      <div className="stat-value">{value}</div>
+      <div className="stat-label">{label}</div>
+    </div>
+  );
+}
+
+function AdminProducts({ products, onSave, onDelete }) {
+  const blank = { id: "", name: "", category: CATEGORIES[0], price: "", wholesalePrice: "", moq: "", stock: "", unit: "", sku: "", description: "" };
+  const [editing, setEditing] = useState(null);
+
+  const startNew = () => setEditing({ ...blank, id: uid("p") });
+  const startEdit = (p) => setEditing({ ...p });
+  const change = (k) => (e) => setEditing((f) => ({ ...f, [k]: e.target.value }));
+
+  const submit = (e) => {
+    e.preventDefault();
+    onSave({
+      ...editing,
+      price: parseFloat(editing.price) || 0,
+      wholesalePrice: parseFloat(editing.wholesalePrice) || 0,
+      moq: parseInt(editing.moq, 10) || 1,
+      stock: parseInt(editing.stock, 10) || 0,
+    });
+    setEditing(null);
+  };
+
+  return (
+    <div className="admin-panel">
+      <div className="panel-head">
+        <h3>Products ({products.length})</h3>
+        <button className="btn btn-primary small" onClick={startNew}><Plus size={14} /> Add product</button>
+      </div>
+
+      {editing && (
+        <form className="form-grid inline-editor" onSubmit={submit}>
+          <label>Name<input value={editing.name} onChange={change("name")} required /></label>
+          <label>Category
+            <select value={editing.category} onChange={change("category")}>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </label>
+          <label>Retail price (&#8377;)<input type="number" step="0.01" value={editing.price} onChange={change("price")} required /></label>
+          <label>Wholesale price (&#8377;)<input type="number" step="0.01" value={editing.wholesalePrice} onChange={change("wholesalePrice")} required /></label>
+          <label>MOQ (units)<input type="number" value={editing.moq} onChange={change("moq")} required /></label>
+          <label>Stock<input type="number" value={editing.stock} onChange={change("stock")} required /></label>
+          <label>SKU<input value={editing.sku} onChange={change("sku")} /></label>
+          <label>Sold as<input value={editing.unit} onChange={change("unit")} placeholder="e.g. Pack of 100" /></label>
+          <label className="span-2">Description<textarea value={editing.description} onChange={change("description")} rows={2} /></label>
+          <div className="span-2 form-actions">
+            <button className="btn btn-primary" type="submit"><Save size={14} /> Save product</button>
+            <button className="btn btn-outline" type="button" onClick={() => setEditing(null)}>Cancel</button>
+          </div>
+        </form>
+      )}
+
+      <div className="admin-table">
+        <div className="admin-table-row head">
+          <span>Product</span><span>Category</span><span>Retail / Wholesale</span><span>Stock</span><span></span>
+        </div>
+        {products.map((p) => (
+          <div className="admin-table-row" key={p.id}>
+            <span className="cell-name">{p.name}<em>{p.sku}</em></span>
+            <span>{p.category}</span>
+            <span>{rupees(p.price)} / {rupees(p.wholesalePrice)}</span>
+            <span><StockBadge stock={p.stock} /></span>
+            <span className="row-actions">
+              <button className="icon-btn" onClick={() => startEdit(p)}><Pencil size={14} /></button>
+              <button className="icon-btn danger" onClick={() => onDelete(p.id)}><Trash2 size={14} /></button>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const ORDER_STATUSES = ["Processing", "Shipped", "Delivered", "Cancelled"];
+
+function AdminOrders({ orders, onUpdateStatus }) {
+  if (orders.length === 0) {
+    return <div className="empty-state"><ClipboardList size={22} /><p>No orders placed yet.</p></div>;
+  }
+  return (
+    <div className="admin-panel">
+      <h3>Orders ({orders.length})</h3>
+      <div className="admin-table orders">
+        <div className="admin-table-row head">
+          <span>Order</span><span>Customer</span><span>Total</span><span>Payment</span><span>Status</span>
+        </div>
+        {orders.map((o) => (
+          <div className="admin-table-row" key={o.id}>
+            <span className="cell-name">{o.id}<em>{new Date(o.date).toLocaleDateString("en-IN")}</em></span>
+            <span>{o.customerName}<br /><em className="muted">{o.customerEmail}</em></span>
+            <span>{rupees(o.total)}</span>
+            <span><span className="badge badge-in"><CheckCircle2 size={12} /> {o.paymentStatus}</span></span>
+            <span>
+              <select value={o.status} onChange={(e) => onUpdateStatus(o.id, e.target.value)} className={`status-select status-${o.status.toLowerCase()}`}>
+                {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AdminInventory({ products, lowStockList, outOfStockList, onRestock }) {
+  return (
+    <div className="admin-panel inventory">
+      <div className="inv-section">
+        <h3><PackageX size={16} /> Out of stock ({outOfStockList.length})</h3>
+        {outOfStockList.length === 0 ? <p className="mock-note">Nothing out of stock right now.</p> : (
+          <div className="inv-list">
+            {outOfStockList.map((p) => (
+              <div className="inv-row" key={p.id}>
+                <span>{p.name}</span>
+                <button className="btn btn-outline small" onClick={() => onRestock(p.id, 25)}>Restock +25</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="inv-section">
+        <h3><TrendingDown size={16} /> Low stock ({lowStockList.length})</h3>
+        {lowStockList.length === 0 ? <p className="mock-note">Nothing below the low-stock threshold ({LOW_STOCK_THRESHOLD} units).</p> : (
+          <div className="inv-list">
+            {lowStockList.map((p) => (
+              <div className="inv-row" key={p.id}>
+                <span>{p.name} <em className="muted">&middot; {p.stock} left</em></span>
+                <button className="btn btn-outline small" onClick={() => onRestock(p.id, 25)}>Restock +25</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="inv-section">
+        <h3><Boxes size={16} /> Full inventory</h3>
+        <div className="admin-table">
+          <div className="admin-table-row head"><span>Product</span><span>Category</span><span>Stock</span><span>Status</span></div>
+          {products.map((p) => (
+            <div className="admin-table-row" key={p.id}>
+              <span className="cell-name">{p.name}</span>
+              <span>{p.category}</span>
+              <span>{p.stock}</span>
+              <span><StockBadge stock={p.stock} /></span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Footer                                                                   */
+/* ---------------------------------------------------------------------- */
+
+function Footer({ goto }) {
+  return (
+    <footer className="site-footer">
+      <div>
+        <div className="brand small"><PartyPopper size={16} /> UTSAV<em>WHOLESALE BAZAAR</em></div>
+        <p>Demo storefront &mdash; catalog and orders are shared and persist between visits; sign-in sessions do not.</p>
+        <p className="footer-fine"><Users size={12} /> Serving retailers &amp; individual customers across India</p>
+      </div>
+      <div className="footer-links">
+        <button onClick={() => goto("catalog", { category: null, clearSearch: true })}>Catalog</button>
+        <button onClick={() => goto("orders")}>Order history</button>
+        <button onClick={() => goto("login")}>Sign in</button>
+      </div>
+    </footer>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Styles                                                                   */
+/* ---------------------------------------------------------------------- */
+
+const GLOBAL_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Poppins:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
+:root{
+  --plum:#2E0930; --plum-2:#3D0F41; --cream:#FFF8EE; --card:#FFFCF6;
+  --ink:#2B1330; --ink-soft:#6B5A6E; --magenta:#E6007E; --magenta-dark:#B8005F;
+  --gold:#FFB100; --gold-dark:#D99400; --indigo:#3B5BDB; --violet:#8E44AD;
+  --warn:#B8791F; --danger:#C0392B; --moss:#2F8F5B; --line:#EEE0DE;
+}
+*{box-sizing:border-box;}
+.app-root{ font-family:'Poppins',sans-serif; background:var(--cream); color:var(--ink); min-height:100vh; display:flex; flex-direction:column; }
+h1,h2,h3{ font-family:'Baloo 2',sans-serif; font-weight:700; letter-spacing:0.01em; margin:0; }
+p{ line-height:1.6; color:var(--ink-soft); margin:0; }
+button{ font-family:inherit; cursor:pointer; }
+input,select,textarea{ font-family:'Poppins',sans-serif; }
+.boot-screen{ height:100vh; display:flex; align-items:center; justify-content:center; gap:10px; background:var(--plum); color:var(--cream); font-family:'Poppins',sans-serif; }
+.spin{ animation:spin 1s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+@keyframes float{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-10px); } }
+
+/* Top nav */
+.topnav{ background:var(--plum); color:var(--cream); position:sticky; top:0; z-index:20; }
+.topbar{ display:flex; gap:22px; font-size:11.5px; padding:6px 20px; background:var(--plum-2); color:#E5C9E0; flex-wrap:wrap; max-width:1180px; margin:0 auto; }
+.topbar span{ display:flex; align-items:center; gap:5px; }
+.topbar-hide-sm{ display:flex; }
+.topnav-inner{ max-width:1180px; margin:0 auto; display:flex; align-items:center; gap:16px; padding:13px 20px; }
+.brand{ display:flex; align-items:center; gap:8px; background:none; border:none; color:var(--cream); font-family:'Baloo 2'; font-weight:800; font-size:16px; letter-spacing:0.02em; white-space:nowrap; }
+.brand em{ display:block; font-style:normal; font-size:9px; color:#C99BC4; letter-spacing:0.1em; font-weight:600; }
+.brand.small{ font-size:13px; }
+.nav-links{ display:flex; gap:4px; flex-shrink:0; }
+.nav-links button{ background:none; border:none; color:var(--cream); padding:8px 12px; border-radius:20px; font-size:14px; font-weight:500; }
+.nav-links button:hover{ background:rgba(255,255,255,0.1); }
+.mode-toggle{ display:flex; background:rgba(255,255,255,0.1); border-radius:20px; padding:3px; flex-shrink:0; }
+.mode-toggle button{ background:none; border:none; padding:6px 13px; border-radius:16px; font-size:12.5px; font-weight:700; color:#E5C9E0; }
+.mode-toggle button.active{ background:var(--gold); color:var(--plum); }
+.mode-toggle.small{ margin:10px 0 14px; }
+.mode-toggle.full{ width:100%; margin-bottom:8px; }
+.nav-search{ flex:1; display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.16); border-radius:20px; padding:7px 14px; max-width:280px; }
+.nav-search input{ background:none; border:none; outline:none; color:var(--cream); font-size:13px; width:100%; }
+.nav-search input::placeholder{ color:#C99BC4; }
+.nav-actions{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
+.icon-btn{ position:relative; background:none; border:none; color:var(--cream); display:flex; align-items:center; gap:6px; padding:8px; border-radius:20px; font-size:13px; }
+.icon-btn:hover{ background:rgba(255,255,255,0.1); }
+.icon-btn.danger{ color:var(--magenta); }
+.icon-btn.danger:hover{ background:rgba(230,0,126,0.12); }
+.account-btn span{ font-weight:500; }
+.cart-count{ position:absolute; top:1px; right:1px; background:var(--magenta); color:#fff; font-size:10px; font-weight:700; border-radius:20px; padding:1px 5px; line-height:1.3; }
+.mobile-toggle{ display:none; }
+.mobile-menu{ display:none; }
+@media (max-width: 900px){
+  .nav-links, .nav-search, .account-btn span, .mode-toggle:not(.full), .topbar-hide-sm{ display:none; }
+  .mobile-toggle{ display:flex; }
+  .mobile-menu{ display:flex; flex-direction:column; gap:2px; padding:10px 16px 16px; border-top:1px solid rgba(255,255,255,0.12); }
+  .mobile-menu button{ background:none; border:none; color:var(--cream); text-align:left; padding:10px 4px; font-size:14px; }
+  .nav-search.mobile{ display:flex; max-width:none; margin-bottom:6px; }
+}
+
+.page-body{ flex:1; max-width:1180px; margin:0 auto; width:100%; padding:0 20px 60px; }
+
+/* Buttons */
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; border-radius:24px; padding:11px 20px; font-size:14px; font-weight:700; border:1.5px solid transparent; transition:transform .08s ease; }
+.btn:active{ transform:scale(0.98); }
+.btn-primary{ background:var(--magenta); color:#fff; }
+.btn-primary:hover{ background:var(--magenta-dark); }
+.btn-primary:disabled{ background:#D9B9CF; cursor:not-allowed; }
+.btn-gold{ background:var(--gold); color:var(--plum); }
+.btn-gold:hover{ background:var(--gold-dark); }
+.btn-outline{ background:transparent; border-color:var(--ink); color:var(--ink); }
+.btn-outline:hover{ background:rgba(43,19,48,0.06); }
+.btn.full{ width:100%; }
+.btn.small{ padding:7px 14px; font-size:12.5px; }
+.link-btn{ background:none; border:none; color:var(--magenta-dark); font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:4px; padding:4px 0; }
+.link-btn:hover{ text-decoration:underline; }
+
+/* Badges */
+.badge{ display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:700; padding:3px 8px; border-radius:20px; }
+.badge-in{ background:rgba(47,143,91,0.13); color:var(--moss); }
+.badge-low{ background:rgba(184,121,31,0.14); color:var(--warn); }
+.badge-out{ background:rgba(192,57,43,0.13); color:var(--danger); }
+.mode-flag{ font-weight:700; font-size:11px; }
+.mode-flag.wholesale{ color:var(--gold-dark); }
+.mode-flag.retail{ color:var(--indigo); }
+
+/* Price tag */
+.price-tag{ display:flex; flex-direction:column; }
+.price-main{ font-weight:700; color:var(--plum); font-family:'Baloo 2'; font-size:15px; }
+.price-main em{ font-style:normal; font-size:10.5px; color:var(--ink-soft); font-weight:500; }
+.moq-note{ font-size:10px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; }
+.price-tag.wholesale .price-main{ color:var(--gold-dark); }
+
+/* Hero / Home */
+.home{ display:flex; flex-direction:column; gap:52px; padding-top:32px; }
+.hero{ display:grid; grid-template-columns:1.25fr 0.85fr; gap:36px; align-items:center; }
+.hero-tag{ font-size:11.5px; letter-spacing:0.1em; color:var(--magenta-dark); font-weight:700; margin-bottom:12px; font-family:'IBM Plex Mono',monospace; }
+.hero-copy h1{ font-size:46px; line-height:1.06; margin-bottom:16px; color:var(--plum); }
+.hero-copy p{ max-width:48ch; margin-bottom:24px; font-size:15.5px; }
+.hero-ctas{ display:flex; gap:12px; flex-wrap:wrap; }
+.hero-visual{ position:relative; }
+.hero-card{ background:linear-gradient(155deg, var(--plum), var(--plum-2)); color:var(--cream); border-radius:16px; padding:26px; display:flex; flex-direction:column; gap:0; position:relative; z-index:2; }
+.hero-card-row{ display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.12); font-size:13.5px; }
+.hero-card-row:last-child{ border-bottom:none; }
+.hero-card-row span{ color:#C99BC4; }
+.hero-card-row strong{ color:#fff; }
+.floaty{ position:absolute; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; z-index:3; animation:float 4s ease-in-out infinite; }
+.floaty.f1{ top:-14px; right:20px; background:var(--magenta); animation-delay:0s; }
+.floaty.f2{ bottom:40px; left:-16px; background:var(--gold); color:var(--plum); animation-delay:1.2s; }
+.floaty.f3{ top:60px; right:-10px; background:var(--violet); animation-delay:2s; }
+
+.trust-strip{ display:flex; justify-content:space-between; gap:16px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 22px; flex-wrap:wrap; }
+.trust-strip div{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--plum); }
+
+.cat-rail h2, .featured .section-head h2, .testimonials h2{ font-size:22px; color:var(--plum); margin-bottom:18px; }
+.cat-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:12px; }
+.cat-card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 10px; display:flex; flex-direction:column; align-items:center; gap:10px; color:var(--ink); font-size:12.5px; font-weight:600; text-align:center; }
+.cat-card-icon{ width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; }
+.cat-card:hover{ border-color:var(--tint); transform:translateY(-2px); }
+@media (max-width: 860px){ .hero{ grid-template-columns:1fr; } .cat-grid{ grid-template-columns:repeat(3,1fr); } .hero-copy h1{ font-size:36px; } }
+
+.wholesale-banner{ background:linear-gradient(120deg, var(--magenta), var(--violet)); border-radius:18px; padding:30px 32px; display:flex; align-items:center; justify-content:space-between; gap:24px; color:#fff; flex-wrap:wrap; }
+.wholesale-banner h2{ color:#fff; font-size:22px; margin-bottom:6px; }
+.wholesale-banner p{ color:#F4D9EF; max-width:44ch; }
+
+.section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px; }
+.result-count{ font-size:12.5px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; }
+
+.testi-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.testi-card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:12px; }
+.testi-card p{ font-size:13.5px; }
+.testi-card strong{ font-size:12.5px; color:var(--plum); }
+@media (max-width:860px){ .testi-grid{ grid-template-columns:1fr; } }
+
+/* Product grid & tiles */
+.product-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+@media (max-width: 960px){ .product-grid{ grid-template-columns:repeat(2,1fr); } }
+.product-tile{ background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; text-align:left; display:flex; flex-direction:column; }
+.product-tile:hover{ border-color:var(--magenta); transform:translateY(-2px); }
+.tile-image{ height:118px; display:flex; align-items:center; justify-content:center; color:#fff; position:relative; }
+.tile-out-strip{ position:absolute; bottom:0; left:0; right:0; background:rgba(20,10,20,0.65); color:#fff; font-size:10.5px; font-weight:700; letter-spacing:0.08em; text-align:center; padding:4px 0; }
+.tile-body{ padding:12px 13px 14px; display:flex; flex-direction:column; gap:5px; }
+.tile-cat{ font-size:10.5px; color:var(--ink-soft); letter-spacing:0.04em; font-family:'IBM Plex Mono',monospace; }
+.tile-name{ font-weight:600; font-size:14.5px; line-height:1.25; }
+.tile-row{ display:flex; align-items:flex-end; justify-content:space-between; margin-top:4px; flex-wrap:wrap; gap:6px; }
+
+/* Catalog page */
+.catalog{ display:grid; grid-template-columns:200px 1fr; gap:32px; padding-top:28px; }
+.catalog-filters{ display:flex; flex-direction:column; gap:2px; }
+.catalog-filters h3{ font-size:12px; color:var(--ink-soft); margin-bottom:8px; }
+.filter-item{ display:flex; align-items:center; gap:8px; background:none; border:none; text-align:left; padding:8px 10px; border-radius:20px; font-size:13.5px; color:var(--ink); }
+.filter-item:hover{ background:var(--card); }
+.filter-item.active{ background:var(--plum); color:#fff; }
+.active-search{ margin-top:14px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-size:12.5px; display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.active-search button{ background:none; border:none; color:var(--ink-soft); }
+@media (max-width: 760px){ .catalog{ grid-template-columns:1fr; } .catalog-filters{ flex-direction:row; overflow-x:auto; gap:6px; } }
+
+/* Product detail */
+.product-page{ padding-top:24px; }
+.back-link{ margin-bottom:16px; }
+.product-layout{ display:grid; grid-template-columns:1fr 1fr; gap:36px; }
+.product-image{ height:340px; border-radius:18px; display:flex; align-items:center; justify-content:center; color:#fff; }
+.product-info h1{ font-size:28px; margin:6px 0 10px; color:var(--plum); }
+.product-price-row{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+.product-price{ font-size:24px; font-weight:700; color:var(--plum); font-family:'Baloo 2'; }
+.product-price em{ font-style:normal; font-size:13px; color:var(--ink-soft); font-weight:500; }
+.moq-banner{ display:inline-flex; align-items:center; gap:6px; background:rgba(255,177,0,0.16); color:var(--gold-dark); font-weight:700; font-size:12.5px; padding:6px 12px; border-radius:20px; margin-bottom:16px; }
+.product-desc{ margin-bottom:20px; font-size:14.5px; }
+.spec-table{ border-top:1px solid var(--line); padding-top:6px; margin-bottom:24px; }
+.spec-row{ display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+.spec-row span{ color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; font-size:12.5px; }
+.spec-row.total{ border-bottom:none; padding-top:12px; font-size:15px; }
+.spec-row.total strong{ font-size:17px; color:var(--plum); }
+.add-row{ display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+.qty-stepper{ display:flex; align-items:center; border:1.5px solid var(--line); border-radius:24px; }
+.qty-stepper button{ background:none; border:none; padding:10px 12px; }
+.qty-stepper span{ min-width:28px; text-align:center; font-weight:700; }
+.qty-stepper.small button{ padding:6px 9px; }
+.qty-stepper.small span{ font-size:13px; }
+.out-notice{ display:flex; align-items:center; gap:8px; color:var(--danger); font-weight:600; font-size:13.5px; margin-bottom:14px; }
+.whatsapp-link{ display:inline-flex; align-items:center; gap:7px; color:var(--moss); font-weight:700; font-size:13.5px; text-decoration:none; }
+.whatsapp-link:hover{ text-decoration:underline; }
+@media (max-width: 760px){ .product-layout{ grid-template-columns:1fr; } }
+
+/* Cart / Checkout */
+.cart-page h1, .checkout-page h1, .orders-page h1, .admin-page h1{ font-size:26px; color:var(--plum); margin:24px 0 20px; }
+.cart-layout{ display:grid; grid-template-columns:1fr 320px; gap:28px; align-items:start; }
+.cart-lines{ display:flex; flex-direction:column; gap:10px; }
+.cart-line{ display:grid; grid-template-columns:56px 1fr auto auto auto; align-items:center; gap:14px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; }
+.cart-line-image{ width:56px; height:56px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; }
+.cart-line-price{ font-weight:700; color:var(--plum); min-width:70px; text-align:right; }
+.cart-summary{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:2px; position:sticky; top:120px; }
+.cart-summary .btn{ margin-top:14px; }
+@media (max-width: 860px){ .cart-layout{ grid-template-columns:1fr; } .cart-line{ grid-template-columns:44px 1fr auto; grid-template-areas:'img info price' 'img qty remove'; } }
+
+.checkout-form{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; }
+.checkout-form h3{ font-size:14px; display:flex; align-items:center; gap:7px; margin:18px 0 12px; color:var(--plum); }
+.checkout-form h3:first-child{ margin-top:0; }
+.form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.form-grid.one-col{ grid-template-columns:1fr; }
+.form-grid label{ display:flex; flex-direction:column; gap:5px; font-size:12.5px; font-weight:600; color:var(--ink-soft); }
+.form-grid input, .form-grid select, .form-grid textarea{ border:1.5px solid var(--line); border-radius:10px; padding:9px 12px; font-size:13.5px; color:var(--ink); background:#fff; }
+.form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus{ outline:2px solid var(--magenta); outline-offset:1px; }
+.span-2{ grid-column:span 2; }
+.mock-note{ font-size:12px; color:var(--ink-soft); margin-top:10px; font-style:italic; }
+.form-error{ background:rgba(192,57,43,0.1); color:var(--danger); padding:8px 12px; border-radius:10px; font-size:12.5px; font-weight:600; }
+.form-actions{ display:flex; gap:10px; }
+
+/* Confirmation */
+.confirmation{ text-align:center; padding:50px 0; display:flex; flex-direction:column; align-items:center; gap:14px; }
+.confirm-icon{ color:var(--moss); }
+.confirmation h1{ font-size:28px; color:var(--plum); }
+.confirmation p{ max-width:52ch; }
+.confirm-card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; width:100%; max-width:440px; text-align:left; margin:14px 0; }
+.divider{ height:1px; background:var(--line); margin:8px 0; }
+
+/* Orders */
+.order-list{ display:flex; flex-direction:column; gap:14px; }
+.order-card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
+.order-card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.status-pill{ font-size:11.5px; font-weight:700; padding:4px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:0.03em; }
+.status-processing{ background:rgba(184,121,31,0.14); color:var(--warn); }
+.status-shipped{ background:rgba(59,91,219,0.14); color:var(--indigo); }
+.status-delivered{ background:rgba(47,143,91,0.14); color:var(--moss); }
+.status-cancelled{ background:rgba(192,57,43,0.14); color:var(--danger); }
+
+/* Login */
+.login-page{ display:flex; justify-content:center; padding-top:50px; }
+.login-card{ background:var(--card); border:1px solid var(--line); border-radius:18px; padding:26px; width:100%; max-width:400px; }
+.mode-switch{ display:flex; border:1px solid var(--line); border-radius:20px; overflow:hidden; margin-bottom:18px; }
+.mode-switch button{ flex:1; background:#fff; border:none; padding:9px; font-size:13px; font-weight:700; color:var(--ink-soft); }
+.mode-switch button.active{ background:var(--plum); color:#fff; }
+.login-card h2{ font-size:20px; margin-bottom:6px; color:var(--plum); }
+
+/* Empty state */
+.empty-state{ display:flex; flex-direction:column; align-items:center; gap:12px; padding:70px 20px; text-align:center; color:var(--ink-soft); }
+.empty-state p{ max-width:40ch; }
+
+/* Admin */
+.admin-tabs{ display:flex; gap:6px; border-bottom:1px solid var(--line); margin-bottom:22px; flex-wrap:wrap; }
+.admin-tabs button{ display:flex; align-items:center; gap:6px; background:none; border:none; padding:10px 14px; font-size:13.5px; font-weight:600; color:var(--ink-soft); border-bottom:2px solid transparent; }
+.admin-tabs button.active{ color:var(--plum); border-color:var(--magenta); }
+.stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.stat-card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:6px; color:var(--plum); }
+.stat-card.warn{ color:var(--warn); }
+.stat-card.danger{ color:var(--danger); }
+.stat-value{ font-family:'Baloo 2'; font-size:28px; font-weight:700; }
+.stat-label{ font-size:12px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; }
+@media (max-width:760px){ .stat-grid{ grid-template-columns:repeat(2,1fr); } }
+
+.admin-panel{ display:flex; flex-direction:column; gap:18px; }
+.panel-head{ display:flex; align-items:center; justify-content:space-between; }
+.panel-head h3, .admin-panel h3{ font-size:15px; color:var(--plum); display:flex; align-items:center; gap:7px; }
+.inline-editor{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
+.admin-table{ display:flex; flex-direction:column; border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+.admin-table-row{ display:grid; grid-template-columns:2fr 1fr 1.2fr 1fr 90px; gap:10px; align-items:center; padding:11px 14px; border-bottom:1px solid var(--line); font-size:13px; background:#fff; }
+.admin-table.orders .admin-table-row{ grid-template-columns:1.4fr 1.4fr 0.8fr 1fr 1fr; }
+.admin-table-row.head{ background:var(--card); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:0.03em; color:var(--ink-soft); }
+.admin-table-row:last-child{ border-bottom:none; }
+.cell-name{ display:flex; flex-direction:column; font-weight:600; }
+.cell-name em{ font-style:normal; font-size:11px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; }
+.muted{ color:var(--ink-soft); }
+.row-actions{ display:flex; gap:4px; }
+.status-select{ border:1.5px solid var(--line); border-radius:20px; padding:6px 10px; font-size:12.5px; font-weight:600; background:#fff; }
+@media (max-width:900px){ .admin-table-row, .admin-table.orders .admin-table-row{ grid-template-columns:1fr; gap:4px; padding:12px; } .admin-table-row.head{ display:none; } }
+
+.inventory{ gap:26px; }
+.inv-section{ display:flex; flex-direction:column; gap:10px; }
+.inv-list{ display:flex; flex-direction:column; gap:6px; }
+.inv-row{ display:flex; align-items:center; justify-content:space-between; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:9px 14px; font-size:13px; }
+
+/* Toast */
+.toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--plum); color:#fff; padding:11px 22px; border-radius:24px; font-size:13.5px; font-weight:600; box-shadow:0 6px 18px rgba(46,9,48,0.3); z-index:50; }
+
+/* Footer */
+.site-footer{ background:var(--plum); color:#C99BC4; padding:30px 20px; display:flex; flex-wrap:wrap; gap:20px; justify-content:space-between; align-items:flex-start; }
+.site-footer p{ color:#C99BC4; max-width:44ch; font-size:12.5px; margin-top:8px; }
+.footer-fine{ display:flex; align-items:center; gap:6px; }
+.footer-links{ display:flex; gap:16px; }
+.footer-links button{ background:none; border:none; color:var(--cream); font-size:13px; font-weight:500; }
+.footer-links button:hover{ text-decoration:underline; }
+`;
